@@ -1,0 +1,30 @@
+#Enviorment
+.env
+.env.*
+!.env.example
+
+#python 
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+#node
+node_modules/
+dist/
+
+# Uploaded images
+storage/uploads/*
+!storage/uploads/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+.pytest_cache/
+.coverage
