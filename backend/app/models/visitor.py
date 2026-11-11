@@ -1,0 +1,30 @@
+import uuid
+from datetime import datetime
+
+from sqlalchemy import DateTime, String, UniqueConstraint, func
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import Uuid
+
+from app.db.session import Base
+
+
+class Visitor(Base):
+    __tablename__ = "visitors"
+    __table_args__ = (
+        UniqueConstraint("access_code_hash", name="uq_visitors_access_code_hash"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    access_code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
