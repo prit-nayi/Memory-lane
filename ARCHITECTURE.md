@@ -14,6 +14,16 @@ The backend separates HTTP routes (`app/api`), request/response validation
 SQLAlchemy models (`app/models`). Configuration is loaded from the project-root
 `.env` file. Database sessions are provided per request and closed after use.
 
+The React visitor app is routed through React Router. Visitor and photo API
+calls are isolated in `frontend/src/services`, with the visitor code and profile
+managed by context. In local development Vite proxies `/api` and `/health` to
+FastAPI; this avoids requiring permissive development CORS settings.
+
+Visitor access codes are held in tab-scoped `sessionStorage`, validated against
+`GET /api/v1/visitors/me` when restoring a session, and sent in the
+`X-Visitor-Access-Code` request header for protected API calls. Photo previews
+use browser object URLs and do not expose server-side local file paths.
+
 ## Database Design
 
 ### `visitors`
@@ -41,16 +51,16 @@ are the basis for using a fast digest rather than a password-oriented hash.
 | `storage_key` | varchar(41) | Required, unique, generated UUID filename |
 | `content_type` | varchar(32) | Required; inferred from decoded image format |
 | `file_size` | integer | Required; bytes |
-| `status` | varchar(8) | Required; `pending`, `approved`, or `rejected` |
 | `created_at` | timestamp with time zone | Required, database default |
 | `updated_at` | timestamp with time zone | Required, database default |
 
 Photo files are written to the configured local storage directory and are not
-served as public static assets. Only photo metadata is returned by visitor
-endpoints; access is scoped to the visitor identified by their access code.
-Uploads are staged and validated before their metadata is committed. Failed
-requests clean up staged/finalized files. Visitors can delete pending or
-rejected photos; approved photos are read-only to visitors.
+mounted as public static assets. Uploads are staged and validated before their
+metadata is committed. Failed requests clean up staged/finalized files.
+Validated photos are published to the public slideshow immediately. Visitor
+metadata operations are scoped to the visitor identified by their access code;
+slideshow image delivery is intentionally public. Owners may delete their own
+photos, which removes them from the slideshow.
 
 ## API Design
 
@@ -62,10 +72,15 @@ rejected photos; approved photos are read-only to visitors.
   `X-Visitor-Access-Code` header rather than a URL.
 - `GET /health/database` executes a database connectivity check.
 - `POST /api/v1/photos/upload` validates and stores multiple JPEG, PNG, or
-  WebP images for the authenticated visitor.
+  WebP images for the authenticated visitor; they are published immediately.
 - `GET /api/v1/photos/my-photos` lists only the authenticated visitor's photos.
 - `GET /api/v1/photos/{photo_id}` returns metadata only to the photo's owner.
-- `DELETE /api/v1/photos/{photo_id}` removes an owned pending/rejected photo.
+- `DELETE /api/v1/photos/{photo_id}` removes an owned photo.
+- `GET /api/v1/slideshow/photos` lists all validated photos available to the
+  public slideshow.
+- `GET /api/v1/slideshow/photos/{photo_id}/image` serves an image file to the
+  slideshow.
+- `GET /api/v1/slideshow/settings` supplies the display intervals.
 
 ## Image Storage
 
@@ -79,4 +94,4 @@ public static mount for the upload directory.
 
 ## Real-time Communication
 
-WebSocket events will be documented when slideshow updates are implemented.
+WebSocket events will be documented when real-time push updates are implemented.

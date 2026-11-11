@@ -18,9 +18,9 @@ Memory Lane is a visitor photo-sharing and slideshow web application.
 
 The system allows visitors to register, upload their photographs, and have their photographs displayed in a continuously updated slideshow on a TV or computer screen.
 
-Visitors can return later and access their previous photographs using a unique access code. Their previously approved photographs will automatically be included in the slideshow.
+Visitors can return later and access their previous photographs using a unique access code. All valid uploaded photographs are immediately included in the public slideshow.
 
-The application will also provide an administrative interface to manage visitors, photographs, approvals, and slideshow settings.
+The application will also provide an administrative interface to manage visitors, photographs, and slideshow settings. Photo approval is not required.
 
 ## 1.2 Main Objectives
 
@@ -29,10 +29,10 @@ The application will also provide an administrative interface to manage visitors
 3. Allow returning visitors to access their existing profile.
 4. Allow visitors to upload multiple photographs.
 5. Store photographs securely.
-6. Allow administrators to approve or reject photographs.
-7. Display approved photographs in a slideshow.
-8. Automatically update the slideshow when new photographs are approved.
-9. Include previously approved photographs from returning visitors.
+6. Validate photograph format, content, and size during upload.
+7. Display every valid uploaded photograph in a slideshow.
+8. Automatically update the slideshow when new photographs are uploaded.
+9. Include returning visitors' previously uploaded photographs.
 10. Provide administrators with controls to manage the application.
 
 ## 1.3 User Roles
@@ -42,8 +42,8 @@ The application will have three main interfaces:
 | Interface | Purpose |
 |---|---|
 | Visitor | Register, access account, upload photographs |
-| Administrator | Manage visitors, photographs, approvals and settings |
-| Slideshow Display | Display approved photographs continuously |
+| Administrator | Manage visitors, photographs and settings |
+| Slideshow Display | Display uploaded photographs continuously |
 
 The slideshow is a public display interface, not a separate authenticated user role.
 
@@ -64,7 +64,7 @@ The slideshow is a public display interface, not a separate authenticated user r
 9. Visitor selects and uploads multiple photographs.
 10. Backend validates and stores the photographs.
 11. Photograph records are created in PostgreSQL.
-13. validated photographs become available in the slideshow.
+12. Validated photographs become available in the slideshow immediately.
 
 ## 2.2 Returning Visitor Workflow
 
@@ -74,30 +74,28 @@ The slideshow is a public display interface, not a separate authenticated user r
 4. Backend verifies the access code.
 5. Backend retrieves the visitor's information.
 6. Visitor can upload additional photographs.
-7. Previously approved photographs remain associated with the visitor.
-8. Newly added photographs are added to the slideshow.
+7. Previously uploaded photographs remain associated with the visitor.
+8. Newly added photographs are validated and immediately added to the slideshow.
 
 ## 2.3 Photograph Validation Workflow
 
-1. Visitor uploads a photograph.
-2. Backend validates its type, size and contents.
-3. Original photograph is stored locally.
-4. Photograph metadata is stored in PostgreSQL.
-5. validated photographs become eligible for slideshow display.
-9. The backend notifies connected slideshow screens about the update.
+1. Visitor selects and uploads photographs.
+2. Backend validates each image's type, size, and contents during upload.
+3. If any file is invalid, the batch is rejected and temporary files are cleaned up.
+4. Valid image files and metadata are stored.
+5. Uploaded photographs are immediately available on the public slideshow.
+6. The slideshow refreshes its feed periodically; WebSocket push is planned separately.
 
 ## 2.4 Slideshow Workflow
 
 1. Slideshow screen opens the slideshow page.
-2. Frontend requests the validated photographs from the backend.
+2. Frontend requests all uploaded photographs from the backend.
 3. Backend retrieves validated photograph records.
 4. Frontend displays photographs in sequence.
 5. Each photograph stays visible for the configured duration.
 6. Slideshow continues in a loop.
-7. WebSocket connection listens for new approval events.
-8. When new photographs are validated, the backend sends an update.
-9. Slideshow refreshes its photograph queue without requiring a manual browser refresh.
-10. If the WebSocket connection disconnects, the frontend reconnects and retrieves the latest photograph list.
+7. The slideshow refreshes its photograph queue every few seconds without requiring a manual browser refresh.
+8. WebSocket push updates are added in Phase 6.
 
 ---
 
@@ -277,15 +275,8 @@ Allow visitors to upload photographs and securely associate them with their visi
 - Generate unique file names.
 - Store files in local storage.
 - Save photograph metadata in PostgreSQL.
-- Add photograph status management.
 - Handle failed uploads and cleanup.
 - Prevent unauthorized access to visitor uploads.
-
-### Photograph Statuses
-
-- `pending`
-- `approved`
-- `rejected`
 
 ### Expected Files
 
@@ -315,11 +306,13 @@ Allow visitors to upload photographs and securely associate them with their visi
 - Valid files are stored locally.
 - Photograph metadata is saved correctly.
 - Each photograph belongs to the correct visitor.
-- New photographs have pending approval status.
+- New photographs are immediately available in the slideshow after validation.
 
 ---
 
 ## Phase 4 — Frontend Visitor Interface
+
+**Status: Completed**
 
 ### Objective
 Build the complete visitor-facing website and connect it to the backend.
@@ -347,7 +340,7 @@ Build the complete visitor-facing website and connect it to the backend.
 **D. Visitor dashboard**
 - Show visitor information.
 - Display previously uploaded photographs.
-- Show photograph approval statuses.
+- Show which photographs are already on the slideshow.
 - Provide upload navigation.
 
 **E. Upload page**
@@ -399,12 +392,14 @@ frontend/src/
 
 ## Phase 5 — Slideshow Interface
 
+**Status: Completed**
+
 ### Objective
-Create a dedicated screen for continuously displaying approved photographs.
+Create a dedicated screen for continuously displaying valid uploaded photographs.
 
 ### Tasks
 - Create a full-screen slideshow page.
-- Retrieve approved photographs from the backend.
+- Retrieve all valid uploaded photographs from the backend.
 - Display photographs in sequence.
 - Implement automatic transitions.
 - Configure slide duration.
@@ -419,7 +414,7 @@ Create a dedicated screen for continuously displaying approved photographs.
 | File | Responsibility |
 |---|---|
 | `backend/app/api/v1/slideshow.py` | Slideshow data endpoints |
-| `backend/app/services/slideshow_service.py` | Approved-photo retrieval and slideshow logic |
+| `backend/app/services/slideshow_service.py` | Uploaded-photo retrieval and slideshow logic |
 | `backend/app/schemas/slideshow.py` | Slideshow response schema |
 | `frontend/src/pages/Slideshow.jsx` | Slideshow screen |
 | `frontend/src/components/SlideshowPlayer.jsx` | Photograph transitions and playback |
@@ -430,11 +425,11 @@ Create a dedicated screen for continuously displaying approved photographs.
 
 | Method | Endpoint | Purpose |
 |---|---|---|
-| GET | `/api/v1/slideshow/photos` | Retrieve approved photographs |
+| GET | `/api/v1/slideshow/photos` | Retrieve valid uploaded photographs |
 | GET | `/api/v1/slideshow/settings` | Retrieve slideshow settings |
 
 ### Completion Criteria
-- Only approved photographs are displayed.
+- All valid uploaded photographs are displayed.
 - Photographs transition automatically.
 - Slideshow loops continuously.
 - Display works on a TV or computer browser.
@@ -443,14 +438,16 @@ Create a dedicated screen for continuously displaying approved photographs.
 
 ## Phase 6 — Real-Time Slideshow Updates
 
+**Status: Not started**
+
 ### Objective
-Ensure the slideshow automatically receives newly approved photographs without manual refresh.
+Add real-time push notifications so newly uploaded photographs reach the slideshow without waiting for its periodic refresh.
 
 ### Tasks
 - Configure FastAPI WebSocket endpoint.
 - Create WebSocket connection manager.
 - Maintain connected slideshow clients.
-- Broadcast events when photographs are approved.
+- Broadcast events when photographs are uploaded.
 - Update the slideshow queue when new photographs arrive.
 - Handle WebSocket disconnection.
 - Implement automatic reconnection.
@@ -463,14 +460,14 @@ Ensure the slideshow automatically receives newly approved photographs without m
 |---|---|
 | `backend/app/api/v1/websocket.py` | WebSocket endpoint |
 | `backend/app/services/websocket_manager.py` | Manage connected slideshow clients |
-| `backend/app/services/photo_service.py` | Trigger events after successful approval |
+| `backend/app/services/photo_service.py` | Trigger events after successful photo uploads |
 | `frontend/src/hooks/useSlideshowSocket.js` | WebSocket connection and reconnection |
 | `frontend/src/pages/Slideshow.jsx` | React to real-time updates |
 | `frontend/src/services/slideshowService.js` | Refresh photograph data |
 
 ### Completion Criteria
 - Slideshow connects to WebSocket.
-- Newly approved photographs are broadcast.
+- Newly uploaded photographs are broadcast.
 - Slideshow updates without browser refresh.
 - Reconnection restores the latest slideshow state.
 
@@ -526,7 +523,7 @@ Provide an administrative interface to control the application and manage upload
 |---|---|---|
 | POST | `/api/v1/admin/login` | Administrator login |
 | GET | `/api/v1/admin/dashboard` | Dashboard statistics |
-| GET | `/api/v1/admin/photos` | Retrieve photographs for moderation |
+| GET | `/api/v1/admin/photos` | Retrieve uploaded photographs |
 | DELETE | `/api/v1/admin/photos/{photo_id}` | Delete photograph |
 | GET | `/api/v1/admin/visitors` | List visitors |
 | GET | `/api/v1/admin/settings` | Retrieve settings |
@@ -551,7 +548,7 @@ Ensure the application is stable, secure and ready for demonstration.
 - Visitor registration.
 - Returning visitor verification.
 - Photograph upload.
-- Photograph approval and rejection.
+- Immediate publication of validated photographs.
 - Slideshow playback.
 - Real-time updates.
 - Admin operations.
@@ -812,7 +809,7 @@ The database will gradually include the following main entities:
 | Table | Purpose |
 |---|---|
 | `visitors` | Registered visitors and access-code hashes |
-| `photos` | Photograph metadata, file path and approval status |
+| `photos` | Photograph metadata and local storage key |
 | `admins` | Administrator credentials and account details |
 | `slideshow_settings` | Slideshow configuration |
 
@@ -821,7 +818,7 @@ The database will gradually include the following main entities:
 - One visitor can have multiple photographs.
 - Each photograph belongs to one visitor.
 - Administrators manage photographs and visitors.
-- Slideshow settings control how approved photographs are displayed.
+- Slideshow settings control how uploaded photographs are displayed.
 
 The final schema will be refined when implementing each model and migration.
 
@@ -836,7 +833,7 @@ To maintain code quality and avoid unnecessary rework, follow these rules throug
 3. **No unnecessary dependencies:** Add packages only when the project actually needs them.
 4. **Security first:** Never store plain access codes or admin passwords.
 5. **Validate uploads:** Never trust file extensions alone.
-6. **Approval before display:** Only approved photographs should appear on the public slideshow.
+6. **Validate before display:** Only images passing upload-time format, content, and size checks appear on the public slideshow. No admin approval is required.
 7. **Reliable real-time updates:** Store and commit photograph changes before broadcasting slideshow events.
 8. **Test every module:** Verify backend APIs and frontend behavior before proceeding.
 9. **Document AI assistance:** Record meaningful prompts, generated code, corrections and learning.
@@ -873,24 +870,26 @@ We will not jump to the next phase until the current phase is working correctly.
 | Phase 1 | Project setup and environment | Completed |
 | Phase 2 | Database and visitor management | Completed |
 | Phase 3 | Photograph upload and storage | Completed |
-| Phase 4 | Visitor frontend | Not started |
-| Phase 5 | Slideshow interface | Not started |
+| Phase 4 | Visitor frontend | Completed |
+| Phase 5 | Slideshow interface | Completed |
 | Phase 6 | Real-time slideshow updates | Not started |
 | Phase 7 | Admin dashboard | Not started |
 | Phase 8 | Testing and security | Not started |
 | Phase 9 | Documentation and finalization | Not started |
 
-**Current verified position:** Phase 2 visitor functionality and Phase 3 photo
-upload APIs pass automated tests. PostgreSQL migrations through
-`20261111_02` are applied.
+**Current verified position:** PostgreSQL migrations through
+`20261111_03` are applied. Upload and slideshow API tests pass, and Phases 2–5
+are implemented. Visitor registration, return access, upload and dashboard
+flows were verified against local services. New photos are available to the
+public slideshow immediately after upload validation.
 
-**Next development milestone:** Implement Phase 4 visitor-facing frontend
-registration, returning visitor, dashboard, and upload workflows.
+**Next development milestone:** Implement Phase 6 WebSocket updates for newly
+uploaded photographs.
 
 ---
 
 # Final Project Goal
 
-Deliver a working local application in which a new visitor can register, receive an access code, upload photographs, and later return using that code. Administrators can moderate uploaded photographs, and approved photographs automatically appear on a continuously running slideshow screen.
+Deliver a working local application in which a new visitor can register, receive an access code, upload photographs, and later return using that code. Validated photographs are immediately displayed on a continuously running public slideshow. Administrators can manage visitors, content, and slideshow settings; photo approval is not required.
 
 The system should be modular, maintainable, secure, documented and ready for a future deployment if required.

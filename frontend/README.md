@@ -1,16 +1,32 @@
-# React + Vite
+# Memory Lane visitor frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React/Vite app provides the visitor registration, returning visitor,
+dashboard, and photo upload workflows.
+Validated uploads are immediately published to the public slideshow, which
+cycles photos and refreshes its feed periodically.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Install dependencies and start the API as described in the project
+[README](../README.md). Then, from `frontend`, run:
 
-## React Compiler
+```powershell
+npm install
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The Vite development server proxies `/api` and `/health` to
+`http://localhost:8000`. Set `VITE_API_PROXY_TARGET` in a local `.env` file to
+use a different backend address. For a deployed frontend, configure
+`VITE_API_BASE_URL` to the API origin and configure backend CORS accordingly.
 
-## Expanding the ESLint configuration
+## Validation
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```powershell
+npm run lint
+npm run build
+```
+
+Visitor access codes are held in `sessionStorage` only for the current browser
+tab session. Uploaded image previews use temporary browser object URLs that are
+released when removed or when leaving the upload page.

@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.v1.photos import router as photos_router
+from app.api.v1.slideshow import router as slideshow_router
 from app.api.v1.visitors import router as visitors_router
 from app.db.session import get_db
 
@@ -19,6 +20,7 @@ app = FastAPI(
 )
 app.include_router(visitors_router)
 app.include_router(photos_router)
+app.include_router(slideshow_router)
 
 
 @app.get("/")

@@ -13,5 +13,7 @@
 - Upload limits default to 10 MB per image and 10 images per request, and are
   configurable through the existing `MAX_IMAGE_SIZE_MB` and
   `MAX_PHOTOS_PER_UPLOAD` environment variables.
-- Photo files remain private in local storage; the Phase 3 API exposes metadata
-  only. Visitor deletion is allowed while a photo is pending or rejected.
+- Image files remain in non-public local storage. The slideshow image API is
+  intentionally public so shared photos can be displayed to all visitors.
+- Photos are published automatically after upload validation; there is no
+  approval queue. Owners can remove their own published photos.

@@ -1,11 +1,9 @@
 from io import BytesIO
-import uuid
 
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from app.core.config import settings
-from app.models import Photo
 
 
 def _register(client: TestClient, name: str = "Photo Owner") -> dict:
@@ -53,7 +51,6 @@ def test_upload_multiple_valid_images_and_list_metadata(
     assert response.status_code == 201
     uploaded = response.json()
     assert len(uploaded) == 2
-    assert {photo["status"] for photo in uploaded} == {"pending"}
     assert {photo["content_type"] for photo in uploaded} == {
         "image/jpeg",
         "image/png",
@@ -63,6 +60,7 @@ def test_upload_multiple_valid_images_and_list_metadata(
     } == {"first.png": "image/jpeg", "second.png": "image/png"}
     assert all(photo["visitor_id"] == visitor["id"] for photo in uploaded)
     assert all("storage_key" not in photo for photo in uploaded)
+    assert all("status" not in photo for photo in uploaded)
     stored_files = [path for path in tmp_path.iterdir() if path.is_file()]
     assert len(stored_files) == 2
     assert all(path.name.startswith(".") is False for path in stored_files)
@@ -176,7 +174,7 @@ def test_photo_metadata_is_private_to_its_visitor(
     assert other_list.json() == []
 
 
-def test_pending_photo_can_be_deleted_and_file_is_removed(
+def test_uploaded_photo_can_be_deleted_and_file_is_removed(
     client: TestClient, tmp_path, monkeypatch
 ):
     monkeypatch.setattr(settings, "storage_path", tmp_path)
@@ -200,34 +198,6 @@ def test_pending_photo_can_be_deleted_and_file_is_removed(
         f"/api/v1/photos/{photo['id']}",
         headers={"X-Visitor-Access-Code": visitor["access_code"]},
     ).status_code == 404
-
-
-def test_approved_photo_cannot_be_deleted_by_visitor(
-    client: TestClient, tmp_path, monkeypatch
-):
-    monkeypatch.setattr(settings, "storage_path", tmp_path)
-    visitor = _register(client)
-    upload_response = _upload(
-        client,
-        visitor["access_code"],
-        [("files", ("approved.jpg", _image_bytes(), "image/jpeg"))],
-    )
-    photo_data = upload_response.json()[0]
-    with client.app.state.test_session() as db:
-        photo = db.get(Photo, uuid.UUID(photo_data["id"]))
-        assert photo is not None
-        photo.status = "approved"
-        db.commit()
-
-    response = client.delete(
-        f"/api/v1/photos/{photo_data['id']}",
-        headers={"X-Visitor-Access-Code": visitor["access_code"]},
-    )
-
-    assert response.status_code == 409
-    assert len(list(tmp_path.iterdir())) == 1
-    with client.app.state.test_session() as db:
-        assert db.get(Photo, uuid.UUID(photo_data["id"])) is not None
 
 
 def test_upload_requires_valid_visitor_access_code(client: TestClient):

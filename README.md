@@ -1,8 +1,8 @@
 # Memory Lane
 
-Memory Lane is a visitor photo-sharing application. Visitors register, upload
-photographs for moderation, and approved photographs appear on a continuously
-running slideshow.
+Memory Lane is a visitor photo-sharing application. Visitors register and
+upload photographs that are validated during upload and immediately added to a
+continuously running public slideshow.
 
 ## Technology Stack
 
@@ -18,11 +18,15 @@ running slideshow.
 - Returning visitor verification and profile lookup
 - PostgreSQL visitor persistence and Alembic migrations
 - Multiple JPEG, PNG, and WebP uploads with Pillow content validation
-- Private local photo storage and per-visitor photo metadata
-- Pending photo status and owner-controlled deletion before approval
+- Local photo storage, per-visitor metadata, and public slideshow delivery
+- Immediate slideshow publication after upload-time validation
+- Visitor UI for registration, access-code verification, slideshow listing, and
+  upload previews/progress
+- Public slideshow with automatic cycling and periodic refresh
+- Photos are checked for supported format, decodability, and size during
+  upload; no approval step is required
 
-Photo moderation, the visitor-facing frontend, slideshow, and admin features
-are planned for later phases. See
+Real-time push updates and the admin dashboard remain planned. See
 [Project_implementation_plan.md](./Project_implementation_plan.md) for the
 roadmap.
 
@@ -61,8 +65,13 @@ roadmap.
   metadata.
 - `GET /api/v1/photos/{photo_id}` — returns metadata only when the photo belongs
   to the authenticated visitor.
-- `DELETE /api/v1/photos/{photo_id}` — deletes an owned pending or rejected
-  photo and its stored file; approved photos cannot be deleted by visitors.
+- `DELETE /api/v1/photos/{photo_id}` — deletes an owned photo and its stored
+  file; deletion also removes it from the public slideshow.
+- `GET /api/v1/slideshow/photos` — lists all uploaded, validated photos for
+  public display.
+- `GET /api/v1/slideshow/photos/{photo_id}/image` — serves a validated image
+  file for the slideshow.
+- `GET /api/v1/slideshow/settings` — returns the slide and refresh intervals.
 
 Uploads are limited by `MAX_IMAGE_SIZE_MB` per image and
 `MAX_PHOTOS_PER_UPLOAD` per request. `STORAGE_PATH` is private local storage;
@@ -79,7 +88,23 @@ From `backend`, run:
 Tests use an isolated in-memory SQLite database and do not require a running
 PostgreSQL server.
 
+## Frontend Development
+
+In another terminal, from `frontend`, run:
+
+```powershell
+npm install
+npm run dev
+```
+
+Vite proxies `/api` and `/health` to `http://localhost:8000`. Set
+`VITE_API_PROXY_TARGET` in `frontend/.env` to override the local API address.
+Run `npm run lint` and `npm run build` in `frontend` to validate the UI.
+Visitor access codes are held in tab-scoped `sessionStorage`.
+
 ## Project Status
 
-Phases 1–3 are complete. Phase 3 tests pass and its photo migration is applied
-to the configured PostgreSQL database.
+Phases 1–5 are complete. The slideshow displays all validated uploads without
+an approval queue. Migration `20261111_03` removes the former photo status
+column. The slideshow cycles every 7 seconds and refreshes its feed every
+5 seconds. Real-time push updates and admin features remain planned.

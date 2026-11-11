@@ -36,7 +36,6 @@ def upload_photos(
                 storage_key=staged.storage_key,
                 content_type=staged.content_type,
                 file_size=staged.file_size,
-                status="pending",
             )
             for staged in staged_photos
         ]
@@ -75,9 +74,6 @@ def get_visitor_photo(
 
 
 def delete_visitor_photo(db: Session, photo: Photo) -> None:
-    if photo.status == "approved":
-        raise ValueError("Approved photos cannot be deleted by visitors")
-
     storage_key = photo.storage_key
     db.delete(photo)
     db.commit()

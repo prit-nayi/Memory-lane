@@ -147,11 +147,6 @@ def delete_photo(
         )
     try:
         delete_visitor_photo(db, photo)
-    except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=str(exc),
-        ) from exc
     except (PhotoStorageError, SQLAlchemyError) as exc:
         logger.exception("Could not delete visitor photo %s", photo_id)
         raise HTTPException(
