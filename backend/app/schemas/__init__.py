@@ -1,3 +1,4 @@
+from app.schemas.photo import PhotoResponse
 from app.schemas.visitor import (
     VisitorRegistrationRequest,
     VisitorRegistrationResponse,
@@ -6,6 +7,7 @@ from app.schemas.visitor import (
 )
 
 __all__ = [
+    "PhotoResponse",
     "VisitorRegistrationRequest",
     "VisitorRegistrationResponse",
     "VisitorResponse",

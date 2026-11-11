@@ -17,9 +17,12 @@ running slideshow.
 - Unique, human-readable visitor access codes
 - Returning visitor verification and profile lookup
 - PostgreSQL visitor persistence and Alembic migrations
+- Multiple JPEG, PNG, and WebP uploads with Pillow content validation
+- Private local photo storage and per-visitor photo metadata
+- Pending photo status and owner-controlled deletion before approval
 
-Photo uploads, moderation, the visitor-facing frontend, slideshow, and admin
-features are planned for later phases. See
+Photo moderation, the visitor-facing frontend, slideshow, and admin features
+are planned for later phases. See
 [Project_implementation_plan.md](./Project_implementation_plan.md) for the
 roadmap.
 
@@ -52,6 +55,18 @@ roadmap.
   visitor profile.
 - `GET /api/v1/visitors/me` — returns the profile for the code supplied in the
   `X-Visitor-Access-Code` header.
+- `POST /api/v1/photos/upload` — uploads one or more images as multipart field
+  `files`; requires `X-Visitor-Access-Code`.
+- `GET /api/v1/photos/my-photos` — lists the authenticated visitor's photo
+  metadata.
+- `GET /api/v1/photos/{photo_id}` — returns metadata only when the photo belongs
+  to the authenticated visitor.
+- `DELETE /api/v1/photos/{photo_id}` — deletes an owned pending or rejected
+  photo and its stored file; approved photos cannot be deleted by visitors.
+
+Uploads are limited by `MAX_IMAGE_SIZE_MB` per image and
+`MAX_PHOTOS_PER_UPLOAD` per request. `STORAGE_PATH` is private local storage;
+uploaded files are not mounted as public static files.
 
 ## Backend Tests
 
@@ -66,5 +81,5 @@ PostgreSQL server.
 
 ## Project Status
 
-Phases 1 and 2 are complete. Phase 2 tests pass and its visitor migration has
-been applied to the configured PostgreSQL database.
+Phases 1–3 are complete. Phase 3 tests pass and its photo migration is applied
+to the configured PostgreSQL database.

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, String, UniqueConstraint, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import Uuid
 
 from app.db.session import Base
@@ -27,4 +27,7 @@ class Visitor(Base):
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),
+    )
+    photos: Mapped[list["Photo"]] = relationship(
+        back_populates="visitor", cascade="all, delete-orphan"
     )

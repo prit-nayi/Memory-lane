@@ -8,3 +8,10 @@
   `DATABASE_URL`. `.env.example` contains safe setup guidance.
 - Phase 2 API tests use in-memory SQLite so the test suite does not mutate a
   developer's PostgreSQL database.
+- Phase 3 accepts JPEG, PNG, and WebP image contents; filename extensions and
+  client-provided MIME types are not trusted.
+- Upload limits default to 10 MB per image and 10 images per request, and are
+  configurable through the existing `MAX_IMAGE_SIZE_MB` and
+  `MAX_PHOTOS_PER_UPLOAD` environment variables.
+- Photo files remain private in local storage; the Phase 3 API exposes metadata
+  only. Visitor deletion is allowed while a photo is pending or rejected.

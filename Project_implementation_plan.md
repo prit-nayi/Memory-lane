@@ -262,6 +262,8 @@ Build the database foundation and implement visitor registration and returning v
 
 ## Phase 3 — Photograph Upload and Local Storage
 
+**Status: Completed**
+
 ### Objective
 Allow visitors to upload photographs and securely associate them with their visitor profiles.
 
@@ -870,7 +872,7 @@ We will not jump to the next phase until the current phase is working correctly.
 |---|---|---|
 | Phase 1 | Project setup and environment | Completed |
 | Phase 2 | Database and visitor management | Completed |
-| Phase 3 | Photograph upload and storage | Not started |
+| Phase 3 | Photograph upload and storage | Completed |
 | Phase 4 | Visitor frontend | Not started |
 | Phase 5 | Slideshow interface | Not started |
 | Phase 6 | Real-time slideshow updates | Not started |
@@ -878,12 +880,12 @@ We will not jump to the next phase until the current phase is working correctly.
 | Phase 8 | Testing and security | Not started |
 | Phase 9 | Documentation and finalization | Not started |
 
-**Current verified position:** React frontend and FastAPI backend setup has
-been completed. Phase 2 visitor APIs and tests pass, and the visitor migration
-is applied to PostgreSQL.
+**Current verified position:** Phase 2 visitor functionality and Phase 3 photo
+upload APIs pass automated tests. PostgreSQL migrations through
+`20261111_02` are applied.
 
-**Next development milestone:** Implement Phase 3 photograph upload and local
-storage, including image validation, visitor association and pending approval.
+**Next development milestone:** Implement Phase 4 visitor-facing frontend
+registration, returning visitor, dashboard, and upload workflows.
 
 ---
 
