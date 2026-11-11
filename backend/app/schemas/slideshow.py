@@ -15,3 +15,6 @@ class SlideshowPhotoResponse(BaseModel):
 class SlideshowSettingsResponse(BaseModel):
     slide_duration_seconds: int
     refresh_interval_seconds: int
+    fade_duration_ms: int = 750
+    allow_shuffle: bool = True
+    allow_fullscreen: bool = True

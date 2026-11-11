@@ -35,5 +35,8 @@ def register_visitor(db: Session, name: str) -> tuple[Visitor, str]:
 def get_visitor_by_access_code(db: Session, access_code: str) -> Visitor | None:
     code_hash = hash_access_code(access_code)
     return db.scalar(
-        select(Visitor).where(Visitor.access_code_hash == code_hash)
+        select(Visitor).where(
+            Visitor.access_code_hash == code_hash,
+            Visitor.is_active.is_(True),
+        )
     )

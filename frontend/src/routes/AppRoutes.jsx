@@ -1,4 +1,10 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAdmin } from '../hooks/useAdmin.js'
+import AdminDashboard from '../pages/AdminDashboard.jsx'
+import AdminLogin from '../pages/AdminLogin.jsx'
+import AdminPhotos from '../pages/AdminPhotos.jsx'
+import AdminSettings from '../pages/AdminSettings.jsx'
+import AdminVisitors from '../pages/AdminVisitors.jsx'
 import Footer from '../components/Footer.jsx'
 import Loading from '../components/Loading.jsx'
 import Navbar from '../components/Navbar.jsx'
@@ -16,6 +22,11 @@ function ProtectedRoute({ children }) {
     return <Loading />
   }
   return visitor ? children : <Navigate replace to="/returning" />
+}
+
+function ProtectedAdminRoute({ children }) {
+  const { token } = useAdmin()
+  return token ? children : <Navigate replace to="/admin/login" />
 }
 
 export default function AppRoutes() {
@@ -49,7 +60,47 @@ export default function AppRoutes() {
             }
             path="/upload"
           />
-          <Route element={<Slideshow />} path="/slideshow" />
+          <Route
+            element={
+              <ProtectedRoute>
+                <Slideshow />
+              </ProtectedRoute>
+            }
+            path="/slideshow"
+          />
+          <Route element={<AdminLogin />} path="/admin/login" />
+          <Route
+            element={
+              <ProtectedAdminRoute>
+                <AdminDashboard />
+              </ProtectedAdminRoute>
+            }
+            path="/admin"
+          />
+          <Route
+            element={
+              <ProtectedAdminRoute>
+                <AdminVisitors />
+              </ProtectedAdminRoute>
+            }
+            path="/admin/visitors"
+          />
+          <Route
+            element={
+              <ProtectedAdminRoute>
+                <AdminPhotos />
+              </ProtectedAdminRoute>
+            }
+            path="/admin/photos"
+          />
+          <Route
+            element={
+              <ProtectedAdminRoute>
+                <AdminSettings />
+              </ProtectedAdminRoute>
+            }
+            path="/admin/settings"
+          />
           <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </main>

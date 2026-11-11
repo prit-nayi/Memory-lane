@@ -14,6 +14,10 @@ class Settings(BaseSettings):
     storage_path: Path = Path("storage/uploads")
     max_image_size_mb: int = Field(default=10, ge=1)
     max_photos_per_upload: int = Field(default=10, ge=1)
+    admin_username: str | None = None
+    admin_password: str | None = None
+    admin_token_secret: str | None = None
+    admin_token_expire_minutes: int = Field(default=480, ge=15, le=1440)
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",

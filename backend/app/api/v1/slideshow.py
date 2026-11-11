@@ -1,18 +1,18 @@
 import logging
 import uuid
 from pathlib import Path
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Response, status
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
 
+from app.api.v1.dependencies import AuthenticatedVisitor, DatabaseSession
 from app.core.storage import STORAGE_KEY_PATTERN, get_storage_root
-from app.db.session import get_db
-from app.models.photo import Photo
 from app.schemas.slideshow import (
     SlideshowPhotoResponse,
     SlideshowSettingsResponse,
+)
+from app.services.admin_service import (
+    get_slideshow_settings as get_slideshow_settings_record,
 )
 from app.services.slideshow_service import (
     get_slideshow_photo,
@@ -22,13 +22,12 @@ from app.services.slideshow_service import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/slideshow", tags=["slideshow"])
-DatabaseSession = Annotated[Session, Depends(get_db)]
-SLIDE_DURATION_SECONDS = 7
-REFRESH_INTERVAL_SECONDS = 5
 
 
 @router.get("/photos", response_model=list[SlideshowPhotoResponse])
-def get_slideshow_photos(db: DatabaseSession) -> list[SlideshowPhotoResponse]:
+def get_slideshow_photos(
+    db: DatabaseSession, visitor: AuthenticatedVisitor
+) -> list[SlideshowPhotoResponse]:
     return [
         SlideshowPhotoResponse(
             id=photo.id,
@@ -37,13 +36,17 @@ def get_slideshow_photos(db: DatabaseSession) -> list[SlideshowPhotoResponse]:
             image_url=f"/api/v1/slideshow/photos/{photo.id}/image",
             created_at=photo.created_at,
         )
-        for photo in list_slideshow_photos(db)
+        for photo in list_slideshow_photos(db, visitor.id)
     ]
 
 
 @router.get("/photos/{photo_id}/image")
-def get_slideshow_image(photo_id: uuid.UUID, db: DatabaseSession) -> Response:
-    photo = get_slideshow_photo(db, photo_id)
+def get_slideshow_image(
+    photo_id: uuid.UUID,
+    db: DatabaseSession,
+    visitor: AuthenticatedVisitor,
+) -> Response:
+    photo = get_slideshow_photo(db, visitor.id, photo_id)
     if photo is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -69,15 +72,19 @@ def get_slideshow_image(photo_id: uuid.UUID, db: DatabaseSession) -> Response:
         image_path,
         media_type=photo.content_type,
         headers={
-            "Cache-Control": "public, max-age=3600",
+            "Cache-Control": "private, no-store",
             "X-Content-Type-Options": "nosniff",
         },
     )
 
 
 @router.get("/settings", response_model=SlideshowSettingsResponse)
-def get_slideshow_settings() -> SlideshowSettingsResponse:
+def get_slideshow_settings(db: DatabaseSession) -> SlideshowSettingsResponse:
+    settings_record = get_slideshow_settings_record(db)
     return SlideshowSettingsResponse(
-        slide_duration_seconds=SLIDE_DURATION_SECONDS,
-        refresh_interval_seconds=REFRESH_INTERVAL_SECONDS,
+        slide_duration_seconds=settings_record.slide_duration_seconds,
+        refresh_interval_seconds=settings_record.refresh_interval_seconds,
+        fade_duration_ms=settings_record.fade_duration_ms,
+        allow_shuffle=settings_record.allow_shuffle,
+        allow_fullscreen=settings_record.allow_fullscreen,
     )

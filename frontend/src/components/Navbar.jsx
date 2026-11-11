@@ -15,6 +15,7 @@ export default function Navbar() {
       </Link>
       <nav className="site-nav" aria-label="Main navigation">
         <Link to="/slideshow">Slideshow</Link>
+        <Link to="/admin/login">Admin</Link>
         {visitor ? (
           <>
             <Link to="/dashboard">My photos</Link>

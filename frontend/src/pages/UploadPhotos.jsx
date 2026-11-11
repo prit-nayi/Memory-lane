@@ -45,7 +45,7 @@ export default function UploadPhotos() {
         <h1>Add to your Memory Lane.</h1>
         <p>
           Choose the photos you would like to share. Valid images are added
-          directly to the shared slideshow as soon as the upload finishes.
+          directly to your personal slideshow as soon as the upload finishes.
         </p>
       </div>
 

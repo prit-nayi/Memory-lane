@@ -69,7 +69,7 @@ export default function Home() {
           </span>
           <div>
             <strong>Relive it together</strong>
-            <span>Your validated photos appear on our shared slideshow right away.</span>
+            <span>Your validated photos appear on your personal slideshow right away.</span>
           </div>
         </div>
       </section>

@@ -35,11 +35,25 @@ use browser object URLs and do not expose server-side local file paths.
 | `access_code_hash` | varchar(64) | Required, unique |
 | `created_at` | timestamp with time zone | Required, database default |
 | `updated_at` | timestamp with time zone | Required, database default |
+| `is_active` | boolean | Required; inactive visitors cannot authenticate |
 
 Access codes contain 16 random characters from an alphabet that omits
 ambiguous characters. The formatted code is returned only during registration;
 the database stores its SHA-256 digest. The code's 80 bits of random entropy
 are the basis for using a fast digest rather than a password-oriented hash.
+
+### `admin_users`
+
+Stores administrator usernames, salted PBKDF2 password hashes, and active
+state. The initial account is created or password-reset by the explicit
+environment-backed `python -m app.bootstrap_admin` command; no public admin
+registration route exists. Login returns an expiring HMAC-signed bearer token.
+
+### `slideshow_settings`
+
+A singleton row stores shared slideshow defaults (duration, refresh interval,
+fade duration, and optional controls). Display-level duration and fade values
+may override these defaults in that display's browser storage.
 
 ### `photos`
 
@@ -57,10 +71,11 @@ are the basis for using a fast digest rather than a password-oriented hash.
 Photo files are written to the configured local storage directory and are not
 mounted as public static assets. Uploads are staged and validated before their
 metadata is committed. Failed requests clean up staged/finalized files.
-Validated photos are published to the public slideshow immediately. Visitor
-metadata operations are scoped to the visitor identified by their access code;
-slideshow image delivery is intentionally public. Owners may delete their own
-photos, which removes them from the slideshow.
+Validated photos are immediately available in their owner's slideshow only.
+Visitor metadata operations, slideshow listings, and slideshow image delivery
+are scoped to the visitor identified by their access code. Image responses are
+not cached by shared browsers. Owners may delete their own photos, which removes
+them from subsequent slideshow listings and image requests.
 
 ## API Design
 
@@ -76,11 +91,19 @@ photos, which removes them from the slideshow.
 - `GET /api/v1/photos/my-photos` lists only the authenticated visitor's photos.
 - `GET /api/v1/photos/{photo_id}` returns metadata only to the photo's owner.
 - `DELETE /api/v1/photos/{photo_id}` removes an owned photo.
-- `GET /api/v1/slideshow/photos` lists all validated photos available to the
-  public slideshow.
-- `GET /api/v1/slideshow/photos/{photo_id}/image` serves an image file to the
-  slideshow.
+- `GET /api/v1/slideshow/photos` lists validated photos belonging to the
+  authenticated visitor.
+- `GET /api/v1/slideshow/photos/{photo_id}/image` serves an image file only to
+  its owner.
 - `GET /api/v1/slideshow/settings` supplies the display intervals.
+- `WS /api/v1/slideshow/ws` broadcasts `{"type":"photos_updated"}` after
+  successful photo creation, photo deletion, or visitor deactivation. The
+  browser reloads the feed on notification and reconnects with exponential
+  backoff; periodic polling remains a fallback.
+- `/api/v1/admin/*` login, dashboard, visitor disable/reactivation, photo
+  management, and slideshow-default endpoints require a valid admin bearer
+  token. Visitor feeds and images remain separately scoped to visitor access
+  codes.
 
 ## Image Storage
 
@@ -94,4 +117,7 @@ public static mount for the upload directory.
 
 ## Real-time Communication
 
-WebSocket events will be documented when real-time push updates are implemented.
+The WebSocket connection manager is process-local. Deployments with multiple
+application workers need shared pub/sub (for example Redis) for cross-worker
+notifications. Slideshow duration and fade-speed preferences are stored in the
+display browser's local storage; playback and shuffle are session controls.

@@ -90,9 +90,8 @@ export default function Register() {
                   type="checkbox"
                 />
                 <span>
-                  I agree to share the photos I upload with the Memory Lane
-                  community and understand they will appear on the public
-                  slideshow as soon as the upload is validated.
+                  I agree to display my uploaded photos in my personal Memory
+                  Lane slideshow. Only someone with my access code can view them.
                 </span>
               </label>
 

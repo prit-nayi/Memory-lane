@@ -13,7 +13,19 @@
 - Upload limits default to 10 MB per image and 10 images per request, and are
   configurable through the existing `MAX_IMAGE_SIZE_MB` and
   `MAX_PHOTOS_PER_UPLOAD` environment variables.
-- Image files remain in non-public local storage. The slideshow image API is
-  intentionally public so shared photos can be displayed to all visitors.
+- Image files remain in non-public local storage. Slideshow listing and image
+  delivery require the owner's access code; visitors cannot see other users'
+  photos.
 - Photos are published automatically after upload validation; there is no
   approval queue. Owners can remove their own published photos.
+- Slideshow controls are device-local preferences stored in browser local
+  storage; they do not change playback on other connected screens.
+- Administrator accounts are bootstrapped from environment credentials using
+  the explicit bootstrap command; admin passwords are salted and hashed in the
+  database. Admin bearer tokens expire after the configured lifetime.
+- Visitor management disables/reactivates accounts rather than deleting
+  visitor records or their photos.
+- Admin slideshow settings are persisted shared defaults; visitor display
+  duration and fade-speed preferences may override them locally.
+- WebSocket broadcasts are process-local and assume a single backend worker;
+  multi-worker deployments require shared pub/sub.

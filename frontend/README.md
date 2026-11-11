@@ -1,9 +1,11 @@
-# Memory Lane visitor frontend
+# Memory Lane frontend
 
 The React/Vite app provides the visitor registration, returning visitor,
 dashboard, and photo upload workflows.
-Validated uploads are immediately published to the public slideshow, which
-cycles photos and refreshes its feed periodically.
+Validated uploads are immediately available in the owner's private slideshow,
+which cycles photos and refreshes its feed periodically.
+The admin portal at `/admin/login` provides protected visitor, photo, and
+slideshow-default management.
 
 ## Development
 

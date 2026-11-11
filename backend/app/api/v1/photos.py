@@ -4,27 +4,22 @@ from typing import Annotated
 
 from fastapi import (
     APIRouter,
-    Depends,
+    BackgroundTasks,
     File,
-    Header,
     HTTPException,
     UploadFile,
     status,
 )
-from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
 
+from app.api.v1.dependencies import AuthenticatedVisitor, DatabaseSession
 from app.core.config import settings
-from app.core.security import hash_access_code
 from app.core.storage import (
     ImageTooLargeError,
     InvalidImageError,
     PhotoStorageError,
     UnsupportedImageError,
 )
-from app.db.session import get_db
-from app.models.visitor import Visitor
 from app.schemas.photo import PhotoResponse
 from app.services.photo_service import (
     delete_visitor_photo,
@@ -32,28 +27,11 @@ from app.services.photo_service import (
     list_visitor_photos,
     upload_photos,
 )
+from app.services.websocket_manager import broadcast_slideshow_update
 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1/photos", tags=["photos"])
-DatabaseSession = Annotated[Session, Depends(get_db)]
-AccessCodeHeader = Annotated[
-    str, Header(alias="X-Visitor-Access-Code", min_length=16, max_length=19)
-]
-
-
-def _get_authenticated_visitor(db: Session, access_code: str) -> Visitor:
-    visitor = db.scalar(
-        select(Visitor).where(
-            Visitor.access_code_hash == hash_access_code(access_code)
-        )
-    )
-    if visitor is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access code",
-        )
-    return visitor
 
 
 @router.post(
@@ -63,10 +41,10 @@ def _get_authenticated_visitor(db: Session, access_code: str) -> Visitor:
 )
 def create_photos(
     db: DatabaseSession,
-    access_code: AccessCodeHeader,
+    visitor: AuthenticatedVisitor,
     files: Annotated[list[UploadFile], File(...)],
+    background_tasks: BackgroundTasks,
 ) -> list[PhotoResponse]:
-    visitor = _get_authenticated_visitor(db, access_code)
     if not files:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -102,14 +80,14 @@ def create_photos(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not save uploaded images",
         ) from exc
+    background_tasks.add_task(broadcast_slideshow_update)
     return [PhotoResponse.model_validate(photo) for photo in photos]
 
 
 @router.get("/my-photos", response_model=list[PhotoResponse])
 def get_my_photos(
-    db: DatabaseSession, access_code: AccessCodeHeader
+    db: DatabaseSession, visitor: AuthenticatedVisitor
 ) -> list[PhotoResponse]:
-    visitor = _get_authenticated_visitor(db, access_code)
     return [
         PhotoResponse.model_validate(photo)
         for photo in list_visitor_photos(db, visitor.id)
@@ -120,9 +98,8 @@ def get_my_photos(
 def get_photo(
     photo_id: uuid.UUID,
     db: DatabaseSession,
-    access_code: AccessCodeHeader,
+    visitor: AuthenticatedVisitor,
 ) -> PhotoResponse:
-    visitor = _get_authenticated_visitor(db, access_code)
     photo = get_visitor_photo(db, visitor.id, photo_id)
     if photo is None:
         raise HTTPException(
@@ -136,9 +113,9 @@ def get_photo(
 def delete_photo(
     photo_id: uuid.UUID,
     db: DatabaseSession,
-    access_code: AccessCodeHeader,
+    visitor: AuthenticatedVisitor,
+    background_tasks: BackgroundTasks,
 ) -> None:
-    visitor = _get_authenticated_visitor(db, access_code)
     photo = get_visitor_photo(db, visitor.id, photo_id)
     if photo is None:
         raise HTTPException(
@@ -153,3 +130,4 @@ def delete_photo(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Could not delete photo",
         ) from exc
+    background_tasks.add_task(broadcast_slideshow_update)

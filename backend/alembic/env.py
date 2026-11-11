@@ -5,7 +5,7 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import settings
 from app.db.session import Base
-from app.models import Visitor
+from app.models import AdminUser, Photo, SlideshowSettings, Visitor
 
 
 config = context.config

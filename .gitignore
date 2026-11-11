@@ -29,5 +29,7 @@ Thumbs.db
 .pytest_cache/
 .coverage
 
-#project implementation plan
-Project_implementation_plan
+# Local project documentation
+/Code_Explanation.md
+/how_it_works.md
+/Project_implementation_plan.md
