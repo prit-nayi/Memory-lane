@@ -28,3 +28,6 @@ Thumbs.db
 # Test
 .pytest_cache/
 .coverage
+
+#project implementation plan
+.Project_implementation_plan.md
